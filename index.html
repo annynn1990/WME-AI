@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>御子-AI 頻道監控面板</title>
+    <style>
+        /* Discord 風格美化 */
+        body { background-color: #36393f; color: #ffffff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; }
+        .header { background: #2f3136; padding: 15px; font-weight: bold; border-bottom: 1px solid #202225; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
+        .message { margin-bottom: 16px; border-bottom: 1px solid #42454a; padding-bottom: 10px; animation: fadeIn 0.3s ease; }
+        .author { color: #00aff4; font-weight: bold; margin-right: 8px; }
+        .time { color: #72767d; font-size: 0.75em; }
+        .content { margin-top: 5px; color: #dcddde; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* 捲軸美化 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2e3338; }
+        ::-webkit-scrollbar-thumb { background: #202225; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="header">● 御子-AI 即時監控頻道：1476579447271587890</div>
+<div id="chat-box">正在嘗試穿透防火牆並建立連線...</div>
+
+<script>
+    // 你的機器人資訊
+    const CONFIG = {
+        token: 'MTQ3NjU4MTQxNTI4NTAzMTAw.GwEt_a.2SCtDXHuBntzvMDvYyfYzGyc71bRmzBwkMpdxU',
+        channelId: '1476579447271587890'
+    };
+
+    async function fetchDiscordMessages() {
+        const chatBox = document.getElementById('chat-box');
+        try {
+            // 使用 allorigins 代理跳板，確保在任何環境都能讀取資料
+            const targetUrl = `https://discord.com/api/v10/channels/${CONFIG.channelId}/messages?limit=20`;
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+            
+            const response = await fetch(proxyUrl);
+            const wrapper = await response.json();
+            const messages = JSON.parse(wrapper.contents);
+
+            if (Array.isArray(messages)) {
+                chatBox.innerHTML = messages.reverse().map(m => `
+                    <div class="message">
+                        <div>
+                            <span class="author">${m.author.username}</span>
+                            <span class="time">${new Date(m.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div class="content">${m.content || '<i style="color:#72767d">(媒體訊息或貼圖)</i>'}</div>
+                    </div>
+                `).join('');
+                
+                // 自動捲動到底部
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } else if (messages.code === 50001) {
+                chatBox.innerHTML = '<div style="color:#ff4747">錯誤：機器人不在該頻道，或 Message Content Intent 權限未開啟。</div>';
+            }
+        } catch (err) {
+            console.error("連線錯誤:", err);
+            chatBox.innerHTML = '<div style="color:#faa61a">連線異常，正在重新嘗試...</div>';
+        }
+    }
+
+    // 每 5 秒自動重新整理
+    setInterval(fetchDiscordMessages, 5000);
+    fetchDiscordMessages();
+</script>
+
+</body>
+</html>
