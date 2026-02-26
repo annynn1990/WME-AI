@@ -4,44 +4,51 @@
     <meta charset="UTF-8">
     <title>御子-AI 監控面板</title>
     <style>
-        body { background: #36393f; color: #fff; font-family: sans-serif; padding: 20px; }
-        #chat { background: #2f3136; height: 80vh; overflow-y: auto; padding: 15px; border-radius: 8px; border: 1px solid #444; }
-        .msg { border-bottom: 1px solid #40444b; padding: 8px 0; }
+        body { background: #36393f; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
+        #status { background: #202225; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-size: 0.9em; border: 1px solid #444; }
+        #chat { background: #2f3136; height: 450px; overflow-y: auto; padding: 15px; border-radius: 8px; box-shadow: inset 0 0 10px #000; }
+        .msg { border-bottom: 1px solid #40444b; padding: 10px 0; animation: fadeIn 0.3s; }
         .user { color: #00aff4; font-weight: bold; }
-        .error { color: #ff4747; background: #202225; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+        .content { color: #dcddde; margin-top: 4px; display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
-    <div id="err-log" class="error" style="display:none"></div>
-    <div id="chat">正在連線至 Discord API... (請確保 Bot 的 Message Intent 已開啟並存檔)</div>
+    <div id="status">正在連線至頻道：618042408764178436...</div>
+    <div id="chat">等待訊息中...</div>
 
     <script>
+        // 請確保 TOKEN 是你最新 Reset 過的那串
         const TOKEN = 'MTQ3NjU4MTQxNTI4NTAzMTAw.GwEt_a.2SCtDXHuBntzvMDvYyfYzGyc71bRmzBwkMpdxU';
-        const CHANNEL = '1476579447271587890';
+        const CHANNEL = '618042408764178436';
 
         async function update() {
+            const statusDiv = document.getElementById('status');
+            const chatDiv = document.getElementById('chat');
             try {
                 const api = `https://discord.com/api/v10/channels/${CHANNEL}/messages?limit=20`;
-                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(api)}`);
+                const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(api)}`;
+                
+                const res = await fetch(proxy);
                 const wrapper = await res.json();
                 const data = JSON.parse(wrapper.contents);
 
                 if (data.code === 50001) {
-                    throw new Error("機器人權限不足：請確認機器人是否在頻道內，且 Intent 已開啟並存檔。");
-                }
-                if (data.message === "401: Unauthorized") {
-                    throw new Error("Token 失效：請在 Discord 後台 Reset Token 並更新網頁程式碼。");
-                }
-
-                if (Array.isArray(data)) {
-                    document.getElementById('err-log').style.display = 'none';
-                    document.getElementById('chat').innerHTML = data.reverse().map(m => `
-                        <div class="msg"><span class="user">${m.author.username}</span>: ${m.content || '(媒體)'}</div>
+                    statusDiv.innerHTML = "❌ 錯誤：機器人不在該頻道，或權限未存檔。";
+                    statusDiv.style.borderColor = "#f04747";
+                } else if (Array.isArray(data)) {
+                    statusDiv.innerHTML = "✅ 連線正常 - 監控中";
+                    statusDiv.style.borderColor = "#43b581";
+                    chatDiv.innerHTML = data.reverse().map(m => `
+                        <div class="msg">
+                            <span class="user">${m.author.username}</span>
+                            <span class="content">${m.content || '(媒體內容)'}</span>
+                        </div>
                     `).join('');
+                    chatDiv.scrollTop = chatDiv.scrollHeight;
                 }
             } catch (e) {
-                document.getElementById('err-log').style.display = 'block';
-                document.getElementById('err-log').innerText = "連線失敗：" + e.message;
+                statusDiv.innerText = "📡 網路跳板嘗試中...";
             }
         }
         setInterval(update, 5000);
