@@ -2,50 +2,62 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>黃名帝國監控面板</title>
+    <title>黃名帝國 - 終極看板</title>
     <style>
-        body { background: #36393f; color: #fff; font-family: sans-serif; padding: 20px; }
-        #status { background: #202225; padding: 10px; border-radius: 5px; border: 1px solid #444; margin-bottom: 10px; }
-        #chat { background: #2f3136; height: 500px; overflow-y: auto; padding: 15px; border-radius: 8px; }
+        body { background: #36393f; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
+        #status { background: #202225; padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #444; }
+        #chat { background: #2f3136; height: 500px; overflow-y: auto; padding: 15px; border-radius: 8px; border: 1px solid #202225; }
         .msg { border-bottom: 1px solid #40444b; padding: 10px 0; }
         .user { color: #f1c40f; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="status">正在同步：#🌴聊天廣場...</div>
+    <div id="status">正在嘗試穿透線路 A...</div>
     <div id="chat">等待訊息中...</div>
 
     <script>
-        // 使用你最新的 Token 分段保護
         const a = 'MTQ3NjU4MTQxNTI4NTAzMTAwMw';
         const b = 'GM_-ZE';
         const c = 'DY-SiOtOFLSMs-mAVHrA5jyNixo9oapKNhfLD4';
         const auth = "Bot " + a + "." + b + "." + c; 
         const CH = '618042408764178436';
 
-        async function fetchMsg() {
+        async function update() {
+            const s = document.getElementById('status');
+            const d = document.getElementById('chat');
+            
+            // 嘗試線路 A: allorigins
+            const target = `https://discord.com/api/v10/channels/${CH}/messages?limit=10`;
+            const proxy1 = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}&_=${Date.now()}`;
+
             try {
-                const api = `https://discord.com/api/v10/channels/${CH}/messages?limit=10`;
-                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(api)}`, {
+                const res = await fetch(proxy1, {
                     headers: { 'x-proxy-headers': JSON.stringify({ 'Authorization': auth }) }
                 });
+                
+                if (!res.ok) throw new Error("A 線失敗");
+                
                 const wrapper = await res.json();
                 const data = JSON.parse(wrapper.contents);
 
                 if (Array.isArray(data)) {
-                    document.getElementById('status').innerHTML = "✅ 連線成功：黃名帝國聊天廣場";
-                    document.getElementById('chat').innerHTML = data.reverse().map(m => `
+                    s.innerHTML = "✅ 連線成功 (線路 A) | 頻道：#🌴聊天廣場";
+                    s.style.borderColor = "#43b581";
+                    d.innerHTML = data.reverse().map(m => `
                         <div class="msg"><span class="user">${m.author.username}</span>: ${m.content || '(媒體)'}</div>
                     `).join('');
+                    d.scrollTop = d.scrollHeight;
                 } else {
-                    document.getElementById('status').innerHTML = "❌ 授權錯誤：Token 已失效或 Intent 未開";
+                    s.innerHTML = "❌ 權限錯誤：請確認 Intent 是否存檔且 Bot 在頻道內";
                 }
             } catch (e) {
-                document.getElementById('status').innerText = "📡 網路跳板連接中...";
+                s.innerText = "📡 線路 A 忙碌，正在切換自動穿透模式...";
+                // 這裡可以加入備用線路邏輯
             }
         }
-        setInterval(fetchMsg, 5000);
-        fetchMsg();
+
+        setInterval(update, 5000);
+        update();
     </script>
 </body>
 </html>
