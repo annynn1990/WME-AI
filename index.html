@@ -18,7 +18,7 @@
     <div id="chat">等待訊息中...</div>
 
     <script>
-        // 使用混淆方式拼湊 Token，防止 GitHub 掃描
+        // 你的全新 Token 分段
         const a = 'MTQ3NjU4MTQxNTI4NTAzMTAwMw';
         const b = 'Gbp7Nj';
         const c = 'ebwFtJNCkFcK8Adooe6YTF6FkLIpoWEguk1vKM';
@@ -30,19 +30,26 @@
             const s = document.getElementById('status');
             const d = document.getElementById('chat');
             try {
-                // 使用 allorigins 搭配隨機參數強制刷新
+                // 正確的 API 請求與 Headers 配置
                 const api = `https://discord.com/api/v10/channels/${CID}/messages?limit=10`;
-                const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(api)}&_=${Date.now()}`;
                 
-                const res = await fetch(proxy);
+                // 注意：這裡必須把 Token 傳進去
+                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(api)}`, {
+                    headers: {
+                        'x-proxy-headers': JSON.stringify({
+                            'Authorization': 'Bot ' + secret
+                        })
+                    }
+                });
+
                 const json = await res.json();
                 const data = JSON.parse(json.contents);
 
                 if (Array.isArray(data)) {
-                    s.innerHTML = "✅ 連線成功 | 頻道：" + CID;
+                    s.innerHTML = "✅ 連線成功 | 監控中";
                     s.style.borderColor = "#43b581";
                     if (data.length === 0) {
-                        d.innerHTML = "頻道內目前沒有訊息，請在 Discord 頻道發個言！";
+                        d.innerHTML = "頻道內目前沒有訊息。";
                     } else {
                         d.innerHTML = data.reverse().map(m => `
                             <div class="msg">
@@ -53,11 +60,11 @@
                         d.scrollTop = d.scrollHeight;
                     }
                 } else {
-                    s.innerHTML = "❌ Discord 錯誤：" + (data.message || "授權失敗");
+                    s.innerHTML = "❌ Discord 拒絕連線：" + (data.message || "請檢查 Intent 權限");
                     s.style.borderColor = "#f04747";
                 }
             } catch (e) {
-                s.innerText = "📡 網路跳板連接中，請稍候...";
+                s.innerText = "📡 正在穿透網路環境...";
             }
         }
 
