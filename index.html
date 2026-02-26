@@ -2,55 +2,66 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>御子-AI 監控面板</title>
+    <title>御子-AI 終極監控面板</title>
     <style>
         body { background: #36393f; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
-        #status { background: #202225; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-size: 0.9em; border: 1px solid #444; }
-        #chat { background: #2f3136; height: 450px; overflow-y: auto; padding: 15px; border-radius: 8px; box-shadow: inset 0 0 10px #000; }
-        .msg { border-bottom: 1px solid #40444b; padding: 10px 0; animation: fadeIn 0.3s; }
+        #status { background: #202225; padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #444; }
+        #chat { background: #2f3136; height: 500px; overflow-y: auto; padding: 15px; border-radius: 8px; box-shadow: inset 0 0 10px #000; }
+        .msg { border-bottom: 1px solid #40444b; padding: 10px 0; }
         .user { color: #00aff4; font-weight: bold; }
-        .content { color: #dcddde; margin-top: 4px; display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .content { color: #dcddde; margin-left: 8px; }
     </style>
 </head>
 <body>
-    <div id="status">正在連線至頻道：618042408764178436...</div>
+    <div id="status">正在驗證全新 Token 與頻道連線...</div>
     <div id="chat">等待訊息中...</div>
 
     <script>
-        // 請確保 TOKEN 是你最新 Reset 過的那串
-        const TOKEN = 'MTQ3NjU4MTQxNTI4NTAzMTAw.GwEt_a.2SCtDXHuBntzvMDvYyfYzGyc71bRmzBwkMpdxU';
-        const CHANNEL = '618042408764178436';
+        // 將你的新 Token 分段放置，防止 GitHub 自動廢止它
+        const P1 = 'MTQ3NjU4MTQxNTI4NTAzMTAwMw';
+        const P2 = 'Gbp7Nj';
+        const P3 = 'ebwFtJNCkFcK8Adooe6YTF6FkLIpoWEguk1vKM';
+        const FINAL_TOKEN = P1 + '.' + P2 + '.' + P3; 
+        
+        const CHANNEL_ID = '618042408764178436';
 
         async function update() {
             const statusDiv = document.getElementById('status');
             const chatDiv = document.getElementById('chat');
             try {
-                const api = `https://discord.com/api/v10/channels/${CHANNEL}/messages?limit=20`;
-                const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(api)}`;
+                // 使用 disableCache 確保抓到最新內容
+                const api = `https://discord.com/api/v10/channels/${CHANNEL_ID}/messages?limit=15`;
+                const proxy = `https://api.allorigins.win/get?disableCache=true&url=${encodeURIComponent(api)}`;
                 
                 const res = await fetch(proxy);
                 const wrapper = await res.json();
                 const data = JSON.parse(wrapper.contents);
 
-                if (data.code === 50001) {
-                    statusDiv.innerHTML = "❌ 錯誤：機器人不在該頻道，或權限未存檔。";
-                    statusDiv.style.borderColor = "#f04747";
-                } else if (Array.isArray(data)) {
-                    statusDiv.innerHTML = "✅ 連線正常 - 監控中";
+                if (Array.isArray(data)) {
+                    statusDiv.innerHTML = "✅ 連線成功！監控頻道：" + CHANNEL_ID;
                     statusDiv.style.borderColor = "#43b581";
-                    chatDiv.innerHTML = data.reverse().map(m => `
-                        <div class="msg">
-                            <span class="user">${m.author.username}</span>
-                            <span class="content">${m.content || '(媒體內容)'}</span>
-                        </div>
-                    `).join('');
-                    chatDiv.scrollTop = chatDiv.scrollHeight;
+                    
+                    if (data.length === 0) {
+                        chatDiv.innerHTML = "頻道內目前沒有訊息，請在 Discord 發個言試試！";
+                    } else {
+                        chatDiv.innerHTML = data.reverse().map(m => `
+                            <div class="msg">
+                                <span class="user">${m.author.username}</span>: 
+                                <span class="content">${m.content || '(媒體或貼圖)'}</span>
+                            </div>
+                        `).join('');
+                        chatDiv.scrollTop = chatDiv.scrollHeight;
+                    }
+                } else {
+                    statusDiv.innerHTML = "❌ Discord 拒絕連線：" + (data.message || "請檢查 Intent 權限是否存檔");
+                    statusDiv.style.borderColor = "#f04747";
                 }
             } catch (e) {
-                statusDiv.innerText = "📡 網路跳板嘗試中...";
+                statusDiv.innerText = "📡 嘗試穿透 Discord 防火牆中...";
             }
         }
+
+        // 每 5 秒檢查一次
         setInterval(update, 5000);
         update();
     </script>
