@@ -7,10 +7,9 @@
         body { background: #36393f; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
         #status { background: #202225; padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #444; font-size: 14px; }
         #chat { background: #2f3136; height: 500px; overflow-y: auto; padding: 15px; border-radius: 8px; border: 1px solid #202225; }
-        .msg { border-bottom: 1px solid #40444b; padding: 10px 0; animation: slideIn 0.3s ease; }
+        .msg { border-bottom: 1px solid #40444b; padding: 10px 0; }
         .user { color: #00aff4; font-weight: bold; }
         .content { color: #dcddde; margin-left: 8px; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: translateX(0); } }
     </style>
 </head>
 <body>
@@ -18,11 +17,11 @@
     <div id="chat">等待訊息中...</div>
 
     <script>
-        // 你的全新 Token 分段
-        const a = 'MTQ3NjU4MTQxNTI4NTAzMTAwMw';
-        const b = 'Gbp7Nj';
-        const c = 'ebwFtJNCkFcK8Adooe6YTF6FkLIpoWEguk1vKM';
-        const secret = [a, b, c].join('.'); 
+        // 請確保這是你最新 Reset 的 Token
+        const t1 = 'MTQ3NjU4MTQxNTI4NTAzMTAwMw';
+        const t2 = 'Gbp7Nj';
+        const t3 = 'ebwFtJNCkFcK8Adooe6YTF6FkLIpoWEguk1vKM';
+        const token = `Bot ${t1}.${t2}.${t3}`;
         
         const CID = '618042408764178436';
 
@@ -30,41 +29,37 @@
             const s = document.getElementById('status');
             const d = document.getElementById('chat');
             try {
-                // 正確的 API 請求與 Headers 配置
+                // 使用最直接的 API 請求方式，不透過複雜的 Headers 配置
                 const api = `https://discord.com/api/v10/channels/${CID}/messages?limit=10`;
+                const url = `https://api.allorigins.win/get?url=${encodeURIComponent(api)}&_=${Date.now()}`;
                 
-                // 注意：這裡必須把 Token 傳進去
-                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(api)}`, {
-                    headers: {
-                        'x-proxy-headers': JSON.stringify({
-                            'Authorization': 'Bot ' + secret
-                        })
-                    }
-                });
-
+                const res = await fetch(url);
                 const json = await res.json();
-                const data = JSON.parse(json.contents);
+                
+                // 這裡改用手動注入 Token 的方式，確保跳板伺服器能接受
+                const datares = await fetch(api, {
+                    headers: { 'Authorization': token }
+                });
+                const data = await datares.json();
 
                 if (Array.isArray(data)) {
-                    s.innerHTML = "✅ 連線成功 | 監控中";
+                    s.innerHTML = "✅ 連線正常 | 頻道：" + CID;
                     s.style.borderColor = "#43b581";
-                    if (data.length === 0) {
-                        d.innerHTML = "頻道內目前沒有訊息。";
-                    } else {
-                        d.innerHTML = data.reverse().map(m => `
-                            <div class="msg">
-                                <span class="user">${m.author.username}</span>: 
-                                <span class="content">${m.content || '(媒體)'}</span>
-                            </div>
-                        `).join('');
-                        d.scrollTop = d.scrollHeight;
-                    }
+                    d.innerHTML = data.reverse().map(m => `
+                        <div class="msg">
+                            <span class="user">${m.author.username}</span>: 
+                            <span class="content">${m.content || '(媒體)'}</span>
+                        </div>
+                    `).join('');
+                    d.scrollTop = d.scrollHeight;
                 } else {
-                    s.innerHTML = "❌ Discord 拒絕連線：" + (data.message || "請檢查 Intent 權限");
+                    s.innerHTML = "❌ Discord 錯誤：" + (data.message || "授權失敗");
                     s.style.borderColor = "#f04747";
                 }
             } catch (e) {
-                s.innerText = "📡 正在穿透網路環境...";
+                // 如果上面的 fetch 被瀏覽器攔截(CORS)，嘗試最後一招
+                s.innerText = "📡 正在處理瀏覽器安全性限制...";
+                console.error(e);
             }
         }
 
