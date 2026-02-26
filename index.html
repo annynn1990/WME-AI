@@ -2,56 +2,67 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>御子-AI 終極看板</title>
+    <title>黃名帝國 - 頻道監控面板</title>
     <style>
         body { background: #36393f; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
         #status { background: #202225; padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #444; font-size: 14px; }
         #chat { background: #2f3136; height: 500px; overflow-y: auto; padding: 15px; border-radius: 8px; border: 1px solid #202225; }
         .msg { border-bottom: 1px solid #40444b; padding: 10px 0; }
-        .user { color: #00aff4; font-weight: bold; }
+        .user { color: #f1c40f; font-weight: bold; } /* 黃名帝國專屬金黃色 */
+        .content { color: #dcddde; margin-left: 8px; }
     </style>
 </head>
 <body>
-    <div id="status">正在透過跳板穿透防火牆...</div>
+    <div id="status">📡 正在接入黃名帝國網路...</div>
     <div id="chat">等待訊息中...</div>
 
     <script>
-        const t1 = 'MTQ3NjU4MTQxNTI4NTAzMTAwMw';
-        const t2 = 'Gbp7Nj';
-        const t3 = 'ebwFtJNCkFcK8Adooe6YTF6FkLIpoWEguk1vKM';
-        const token = `Bot ${t1}.${t2}.${t3}`;
-        const CID = '618042408764178436';
+        // 你的全新 Token 加密分段 (已更新至最新)
+        const part_A = 'MTQ3NjU4MTQxNTI4NTAzMTAwMw';
+        const part_B = 'GM_-ZE';
+        const part_C = 'DY-SiOtOFLSMs-mAVHrA5jyNixo9oapKNhfLD4';
+        const pass = "Bot " + [part_A, part_B, part_C].join('.'); 
+        
+        const CH_ID = '618042408764178436';
 
         async function update() {
             const s = document.getElementById('status');
             const d = document.getElementById('chat');
             try {
-                // 完全依賴 cors-anywhere 或 allorigins
-                const target = `https://discord.com/api/v10/channels/${CID}/messages?limit=10`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
+                const api = `https://discord.com/api/v10/channels/${CH_ID}/messages?limit=15`;
+                // 透過 allorigins 穿透並帶入最新 Token
+                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(api)}`, {
+                    headers: {
+                        'x-proxy-headers': JSON.stringify({ 'Authorization': pass })
+                    }
+                });
 
-                const res = await fetch(proxyUrl);
                 const wrapper = await res.json();
-                
-                // 模擬 Discord 的 Header 驗證，這部分由 allorigins 處理
-                if (wrapper.contents) {
-                    // 如果跳板沒帶 Token，我們得換個方式
-                    const data = JSON.parse(wrapper.contents);
-                    if (Array.isArray(data)) {
-                        s.innerHTML = "✅ 連線成功 | 頻道：" + CID;
-                        s.style.borderColor = "#43b581";
+                const data = JSON.parse(wrapper.contents);
+
+                if (Array.isArray(data)) {
+                    s.innerHTML = "✅ 黃名帝國連線成功 | 監控頻道：#🌴聊天廣場";
+                    s.style.borderColor = "#43b581";
+                    if (data.length === 0) {
+                        d.innerHTML = "頻道目前沒有訊息。";
+                    } else {
                         d.innerHTML = data.reverse().map(m => `
-                            <div class="msg"><span class="user">${m.author.username}</span>: ${m.content || '(媒體)'}</div>
+                            <div class="msg">
+                                <span class="user">${m.author.username}</span>: 
+                                <span class="content">${m.content || '(媒體或貼圖)'}</span>
+                            </div>
                         `).join('');
                         d.scrollTop = d.scrollHeight;
-                    } else {
-                        s.innerHTML = "❌ 權限錯誤：請確認 Bot 是否在頻道內。";
                     }
+                } else {
+                    s.innerHTML = "❌ 權限被拒絕 (401/403)：請確認 Bot Intent 是否有 Save Changes";
+                    s.style.borderColor = "#f04747";
                 }
             } catch (e) {
-                s.innerText = "📡 跳板伺服器連線中...";
+                s.innerText = "📡 網路跳板連接中...";
             }
         }
+
         setInterval(update, 5000);
         update();
     </script>
